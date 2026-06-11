@@ -15,29 +15,30 @@
             background-color: #000;
             color: #fff;
             font-family: "KaiTi", "SimSun", serif;
-            max-width: 700px;
+            max-width: 800px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 50px 20px;
         }
 
         header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 50px;
             border-bottom: 1px solid #333;
             padding-bottom: 30px;
         }
 
         h1 {
-            font-size: 2.8em;
+            font-size: 3em;
             margin-bottom: 15px;
             color: #eee;
         }
 
         .subtitle {
             color: #666;
-            font-size: 1.1em;
+            font-size: 1.2em;
         }
 
+        /* 核心修复：按钮强制可点击，无JS依赖样式 */
         .tabs {
             display: flex;
             margin-bottom: 30px;
@@ -50,9 +51,13 @@
             border: none;
             color: #666;
             padding: 15px 0;
-            font-size: 1.3em;
+            font-size: 1.4em;
             cursor: pointer;
             transition: all 0.3s;
+            /* 强制提升可点击性 */
+            pointer-events: auto !important;
+            position: relative;
+            z-index: 10;
         }
 
         .tab-btn.active {
@@ -73,12 +78,12 @@
             background: #111;
             border: 1px solid #333;
             color: #ccc;
-            padding: 18px;
-            font-size: 1.1em;
-            min-height: 150px;
+            padding: 20px;
+            font-size: 1.2em;
+            min-height: 180px;
             resize: vertical;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             font-family: inherit;
         }
 
@@ -91,12 +96,13 @@
             background: transparent;
             border: 1px solid #9977dd;
             color: #9977dd;
-            padding: 12px 30px;
-            font-size: 1.1em;
+            padding: 12px 35px;
+            font-size: 1.2em;
             cursor: pointer;
             border-radius: 6px;
             transition: all 0.3s;
             font-family: inherit;
+            pointer-events: auto !important;
         }
 
         button:hover {
@@ -114,14 +120,14 @@
         }
 
         .note-content {
-            font-size: 1.1em;
+            font-size: 1.2em;
             line-height: 1.8;
             margin-bottom: 10px;
             color: #ddd;
         }
 
         .note-time {
-            font-size: 0.9em;
+            font-size: 0.95em;
             color: #555;
         }
     </style>
@@ -133,56 +139,55 @@
         <p class="subtitle">把垃圾话留在这里，不要随地乱扔垃圾</p>
     </header>
 
+    <!-- 核心修复：用原生onclick，无事件委托，直接绑定 -->
     <div class="tabs">
-        <button class="tab-btn active" data-tab="self">我的独白</button>
-        <button class="tab-btn" data-tab="anon">匿名留言板</button>
+        <button class="tab-btn active" onclick="switchToSelf()">我的独白</button>
+        <button class="tab-btn" onclick="switchToAnon()">匿名留言板</button>
     </div>
 
-    <div id="self" class="tab-content active">
+    <div id="selfTab" class="tab-content active">
         <textarea id="selfInput" placeholder="写下和自己的对话，例如：我：今天有点累 另一个我：慢慢来就好"></textarea>
-        <button id="saveSelfBtn">保存独白</button>
+        <button onclick="saveSelfNote()">保存独白</button>
         <div id="selfList" class="note-list"></div>
     </div>
 
-    <div id="anon" class="tab-content">
+    <div id="anonTab" class="tab-content">
         <textarea id="anonInput" placeholder="写下你的心事，所有访客都能看见"></textarea>
-        <button id="saveAnonBtn">发布留言</button>
+        <button onclick="saveAnonNote()">发布留言</button>
         <div id="anonList" class="note-list"></div>
     </div>
 
     <script>
-        // ================= 请替换成你自己的 Supabase 信息 =================
+        // ================= 你的 Supabase 信息 =================
         const SUPABASE_URL = "https://uoqpiejzetvblgibtlcv.supabase.co";
         const SUPABASE_KEY = "sb_publishable_e50Ga29Efjmak5StW2pvig_RfY05-Qt";
-        // =================================================================
+        // ======================================================
 
         const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 标签切换 - 用 addEventListener 方式，兼容性更好
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
+        // 终极修复：直接定义两个切换函数，无任何复杂逻辑
+        function switchToSelf() {
+            // 隐藏所有内容
+            document.getElementById('selfTab').classList.add('active');
+            document.getElementById('anonTab').classList.remove('active');
+            // 切换按钮状态
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.querySelectorAll('.tab-btn')[1].classList.remove('active');
+        }
 
-        tabButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const targetTab = this.getAttribute('data-tab');
-                
-                // 清除所有状态
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
-                
-                // 激活当前标签
-                this.classList.add('active');
-                document.getElementById(targetTab).classList.add('active');
-
-                // 切换到留言板时自动加载数据
-                if (targetTab === 'anon') {
-                    loadAnonMessages();
-                }
-            });
-        });
+        function switchToAnon() {
+            // 隐藏所有内容
+            document.getElementById('selfTab').classList.remove('active');
+            document.getElementById('anonTab').classList.add('active');
+            // 切换按钮状态
+            document.querySelectorAll('.tab-btn')[0].classList.remove('active');
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            // 自动加载留言
+            loadAnonMessages();
+        }
 
         // 我的独白功能
-        document.getElementById('saveSelfBtn').addEventListener('click', function() {
+        function saveSelfNote() {
             const input = document.getElementById('selfInput');
             const content = input.value.trim();
             
@@ -200,7 +205,7 @@
             localStorage.setItem('selfNotes', JSON.stringify(notes));
             input.value = '';
             renderSelfMessages();
-        });
+        }
 
         function renderSelfMessages() {
             const notes = JSON.parse(localStorage.getItem('selfNotes') || '[]');
@@ -215,7 +220,7 @@
         }
 
         // 匿名留言功能
-        document.getElementById('saveAnonBtn').addEventListener('click', async function() {
+        async function saveAnonNote() {
             const input = document.getElementById('anonInput');
             const content = input.value.trim();
             
@@ -249,7 +254,7 @@
             input.value = '';
             loadAnonMessages();
             alert('留言发布成功，大家都能看到啦！');
-        });
+        }
 
         async function loadAnonMessages() {
             const { data: messages, error } = await supabase
