@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ky okk</title>
+    <title>匿名树洞</title>
     <style>
         * {
             margin: 0;
@@ -12,227 +12,274 @@
             font-family: "KaiTi", "SimSun", serif;
         }
         body {
-            background-color: #000;
-            color: #ccc;
-            max-width: 650px;
+            background-color: #080808;
+            color: #cccccc;
+            max-width: 680px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 25px 20px;
+            line-height: 1.6;
         }
+        /* 头部美化 */
         header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 35px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #222;
         }
         h1 {
-            font-size: 2.2em;
-            margin-bottom: 8px;
-            color: #eee;
+            font-size: 2.4em;
+            margin-bottom: 10px;
+            color: #f0f0f0;
+            letter-spacing: 4px;
         }
         .subtitle {
-            font-size: 1em;
-            color: #888;
+            font-size: 1.05em;
+            color: #777;
         }
+        /* 标签栏美化 + 保证可点击 */
         .tabs {
             display: flex;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #333;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #2a2a2a;
+            user-select: none;
         }
         .tab-btn {
             flex: 1;
             background: transparent;
             border: none;
             color: #888;
-            padding: 12px;
-            font-size: 1.1em;
+            padding: 14px 0;
+            font-size: 1.15em;
             cursor: pointer;
-            border-bottom: 2px solid transparent;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            outline: none;
         }
         .tab-btn.active {
-            color: #fff;
-            border-bottom-color: #fff;
+            color: #f8f8f8;
+            border-bottom-color: #9977dd;
         }
+        .tab-btn:hover {
+            color: #bbb;
+        }
+        /* 内容区域 */
         .tab-content {
             display: none;
         }
         .tab-content.active {
             display: block;
+            animation: fadeIn 0.4s;
         }
+        @keyframes fadeIn {
+            from{opacity: 0;}
+            to{opacity: 1;}
+        }
+        /* 输入框美化 */
         textarea {
             width: 100%;
-            background: #111;
-            border: 1px solid #444;
-            color: #ccc;
-            padding: 12px;
+            background: #121212;
+            border: 1px solid #333;
+            color: #ddd;
+            padding: 15px;
             font-size: 1em;
-            min-height: 100px;
+            min-height: 120px;
             resize: vertical;
-            margin-bottom: 15px;
+            margin-bottom: 18px;
+            border-radius: 6px;
+            transition: border 0.3s;
         }
-        button {
+        textarea:focus {
+            border-color: #9977dd;
+            outline: none;
+        }
+        /* 功能按钮 */
+        .operate-btn {
             background: transparent;
-            border: 1px solid #ccc;
-            color: #ccc;
-            padding: 10px 25px;
+            border: 1px solid #9977dd;
+            color: #9977dd;
+            padding: 10px 28px;
             font-size: 1em;
             cursor: pointer;
+            border-radius: 4px;
             transition: all 0.3s;
         }
-        button:hover {
-            background: #ccc;
+        .operate-btn:hover {
+            background: #9977dd;
             color: #000;
         }
+        /* 留言列表 */
         .note-list {
-            margin-top: 30px;
+            margin-top: 35px;
         }
         .note-item {
-            padding: 15px 0;
-            border-bottom: 1px solid #222;
+            padding: 18px 0;
+            border-bottom: 1px solid #1f1f1f;
         }
         .note-content {
             font-size: 1.1em;
-            line-height: 1.6;
-            margin-bottom: 8px;
+            line-height: 1.7;
+            margin-bottom: 10px;
+            color: #e2e2e2;
         }
         .note-time {
-            font-size: 0.85em;
-            color: #666;
+            font-size: 0.88em;
+            color: #555;
         }
     </style>
+    <!-- 引入数据库SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <header>
-        <h1>垃圾话</h1>
-        <p class="subtitle">把心事说给风听</p>
+        <h1>垃圾桶</h1>
+        <p class="subtitle">把垃圾话留在这里，不要随地乱扔垃圾</p>
     </header>
 
+    <!-- 标签按钮（原生点击，无代码冲突） -->
     <div class="tabs">
-        <button class="tab-btn active" data-tab="self">我的独白</button>
-        <button class="tab-btn" data-tab="anon">匿名留言板</button>
+        <button class="tab-btn active" onclick="changeTab('self')">我的独白</button>
+        <button class="tab-btn" onclick="changeTab('anon')">匿名留言板</button>
     </div>
 
+    <!-- 我的独白 -->
     <div id="self" class="tab-content active">
-        <textarea id="selfInput" placeholder="写下和自己的对话，比如：我：今天有点累 另一个我：没关系，休息一下就好"></textarea>
-        <button onclick="addSelfNote()">保存独白</button>
+        <textarea id="selfInput" placeholder="写下和自己的对话，例如：我：今天有点累 另一个我：慢慢来就好"></textarea>
+        <button class="operate-btn" onclick="addSelfNote()">保存独白</button>
         <div id="selfList" class="note-list"></div>
     </div>
 
+    <!-- 匿名留言板 -->
     <div id="anon" class="tab-content">
-        <textarea id="anonInput" placeholder="写下你的匿名心事，所有人都能看到"></textarea>
-        <button onclick="addAnonNote()">发布留言</button>
+        <textarea id="anonInput" placeholder="写下你的心事，所有访客都能看见"></textarea>
+        <button class="operate-btn" onclick="addAnonNote()">发布留言</button>
         <div id="anonList" class="note-list"></div>
     </div>
 
     <script>
-        // ========== 在这里替换成你自己的 Supabase 信息 ==========
+        // ================= 请替换成你自己的 Supabase 信息 =================
         const SUPABASE_URL = "ap-northeast-2";
         const SUPABASE_KEY = "uoqpiejzetvblgibtlcv";
-        // =======================================================
+        // =================================================================
 
         const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 修复标签切换
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
+        // 标签切换函数（修复点击失效核心）
+        function changeTab(tabName) {
+            // 隐藏所有内容
+            let allContent = document.getElementsByClassName("tab-content");
+            for(let i = 0; i < allContent.length; i++){
+                allContent[i].classList.remove("active");
+            }
+            // 取消按钮选中
+            let allBtn = document.getElementsByClassName("tab-btn");
+            for(let i = 0; i < allBtn.length; i++){
+                allBtn[i].classList.remove("active");
+            }
+            // 激活对应内容+按钮
+            document.getElementById(tabName).classList.add("active");
+            event.currentTarget.classList.add("active");
 
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', function(){
-                const targetTab = this.getAttribute('data-tab');
-                // 清除所有激活状态
-                tabBtns.forEach(b => b.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-                // 激活当前
-                this.classList.add('active');
-                document.getElementById(targetTab).classList.add('active');
-                // 切换到留言板自动加载数据
-                if(targetTab === 'anon'){
-                    renderAnon();
-                }
-            });
-        });
+            // 切换到留言板自动加载数据
+            if(tabName === "anon"){
+                loadAnonMsg();
+            }
+        }
 
-        // 我的独白（本地存储）
+        // ========== 我的独白（本地存储） ==========
         function addSelfNote() {
-            const input = document.getElementById('selfInput');
-            const content = input.value.trim();
-            if (!content) return alert('请输入内容');
-
-            const notes = JSON.parse(localStorage.getItem('selfNotes') || '[]');
-            notes.unshift({
-                content: content,
+            let input = document.getElementById("selfInput");
+            let text = input.value.trim();
+            if(!text){
+                alert("请输入内容再保存！");
+                return;
+            }
+            let data = JSON.parse(localStorage.getItem("selfNotes") || "[]");
+            data.unshift({
+                content: text,
                 time: new Date().toLocaleString()
             });
-            localStorage.setItem('selfNotes', JSON.stringify(notes));
-            input.value = '';
-            renderSelf();
+            localStorage.setItem("selfNotes", JSON.stringify(data));
+            input.value = "";
+            renderSelfMsg();
         }
 
-        function renderSelf() {
-            const notes = JSON.parse(localStorage.getItem('selfNotes') || '[]');
-            const list = document.getElementById('selfList');
-            list.innerHTML = notes.map(note => `
+        function renderSelfMsg() {
+            let data = JSON.parse(localStorage.getItem("selfNotes") || "[]");
+            let box = document.getElementById("selfList");
+            let html = "";
+            data.forEach(item => {
+                html += `
                 <div class="note-item">
-                    <div class="note-content">${note.content}</div>
-                    <div class="note-time">${note.time}</div>
+                    <div class="note-content">${item.content}</div>
+                    <div class="note-time">${item.time}</div>
                 </div>
-            `).join('');
+                `;
+            });
+            box.innerHTML = html;
         }
 
-        // 匿名留言（云端数据库，所有人互通）
+        // ========== 匿名留言（云端互通） ==========
         async function addAnonNote() {
-            const input = document.getElementById('anonInput');
-            const content = input.value.trim();
-            if (!content) return alert('请输入留言内容');
+            let input = document.getElementById("anonInput");
+            let text = input.value.trim();
+            if(!text){
+                alert("请输入留言内容！");
+                return;
+            }
 
-            // 24小时限制
-            const lastPost = localStorage.getItem('lastAnonPost');
-            if (lastPost) {
-                const diff = Date.now() - parseInt(lastPost);
-                if (diff < 24 * 60 * 60 * 1000) {
-                    return alert('24小时内只能发布一条留言');
+            // 24小时发布限制
+            let lastTime = localStorage.getItem("lastPostTime");
+            if(lastTime){
+                let now = Date.now();
+                if(now - parseInt(lastTime) < 86400000){
+                    alert("24小时内仅可发布一条留言哦~");
+                    return;
                 }
             }
 
-            const { error } = await supabase
-                .from('messages')
-                .insert([{ content: content }]);
-
-            if (error) {
-                alert('发布失败：' + error.message);
+            // 提交到数据库
+            let {error} = await supabase.from("messages").insert([{content: text}]);
+            if(error){
+                alert("发布失败：" + error.message);
                 return;
             }
 
-            localStorage.setItem('lastAnonPost', Date.now().toString());
-            input.value = '';
-            renderAnon();
-            alert('发布成功，所有人都能看到啦！');
+            localStorage.setItem("lastPostTime", Date.now().toString());
+            input.value = "";
+            loadAnonMsg();
+            alert("留言发布成功，大家都能看到啦！");
         }
 
-        async function renderAnon() {
-            const { data: messages, error } = await supabase
-                .from('messages')
-                .select('*')
-                .order('created_at', { ascending: false });
+        async function loadAnonMsg() {
+            let {data, error} = await supabase.from("messages").select("*").order("created_at", {ascending: false});
+            let box = document.getElementById("anonList");
 
-            const list = document.getElementById('anonList');
-            if (error) {
-                list.innerHTML = `<div class="note-item"><div class="note-content">加载失败，请检查网络或配置</div></div>`;
+            if(error){
+                box.innerHTML = `<div class="note-item"><div class="note-content">数据加载失败，请检查配置</div></div>`;
                 return;
             }
-            if (messages.length === 0) {
-                list.innerHTML = `<div class="note-item"><div class="note-content">还没有留言，快来第一条吧</div></div>`;
+            if(data.length === 0){
+                box.innerHTML = `<div class="note-item"><div class="note-content">暂无留言，快来发布第一条吧✨</div></div>`;
                 return;
             }
-            list.innerHTML = messages.map(msg => `
+
+            let html = "";
+            data.forEach(item => {
+                html += `
                 <div class="note-item">
-                    <div class="note-content">${msg.content}</div>
-                    <div class="note-time">${new Date(msg.created_at).toLocaleString()}</div>
+                    <div class="note-content">${item.content}</div>
+                    <div class="note-time">${new Date(item.created_at).toLocaleString()}</div>
                 </div>
-            `).join('');
+                `;
+            });
+            box.innerHTML = html;
         }
 
-        // 页面初始化
-        renderSelf();
-        renderAnon();
+        // 页面初始化加载
+        window.onload = function(){
+            renderSelfMsg();
+            loadAnonMsg();
+        }
     </script>
 </body>
 </html>
