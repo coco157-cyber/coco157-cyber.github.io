@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>coco self-talking </title>
+    <title>匿名树洞</title>
     <style>
         * {
             margin: 0;
@@ -97,18 +97,17 @@
             color: #666;
         }
     </style>
-    <!-- 引入 Supabase 官方 SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <header>
-        <h1>垃圾话留言</h1>
+        <h1>匿名树洞</h1>
         <p class="subtitle">把心事说给风听</p>
     </header>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('self')">我的独白</button>
-        <button class="tab-btn" onclick="switchTab('anon')">匿名留言板</button>
+        <button class="tab-btn active" data-tab="self">我的独白</button>
+        <button class="tab-btn" data-tab="anon">匿名留言板</button>
     </div>
 
     <div id="self" class="tab-content active">
@@ -124,24 +123,34 @@
     </div>
 
     <script>
-        // ------------ 在这里替换成你自己的 Supabase 信息 ------------
-        const SUPABASE_URL = "ap-northeast-2";
-        const SUPABASE_KEY = "uoqpiejzetvblgibtlcv";
-        // ----------------------------------------------------------
+        // ========== 在这里替换成你自己的 Supabase 信息 ==========
+        const SUPABASE_URL = "在这里填你的 Project URL";
+        const SUPABASE_KEY = "在这里填你的 anon public API Key";
+        // =======================================================
 
-        // 初始化 Supabase 客户端
         const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 标签页切换
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            event.target.classList.add('active');
-            if (tabId === 'anon') renderAnon();
-        }
+        // 修复标签切换
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
 
-        // -------------------- 我的独白（本地存储） --------------------
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function(){
+                const targetTab = this.getAttribute('data-tab');
+                // 清除所有激活状态
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                // 激活当前
+                this.classList.add('active');
+                document.getElementById(targetTab).classList.add('active');
+                // 切换到留言板自动加载数据
+                if(targetTab === 'anon'){
+                    renderAnon();
+                }
+            });
+        });
+
+        // 我的独白（本地存储）
         function addSelfNote() {
             const input = document.getElementById('selfInput');
             const content = input.value.trim();
@@ -168,22 +177,21 @@
             `).join('');
         }
 
-        // -------------------- 匿名留言板（Supabase 数据库） --------------------
+        // 匿名留言（云端数据库，所有人互通）
         async function addAnonNote() {
             const input = document.getElementById('anonInput');
             const content = input.value.trim();
             if (!content) return alert('请输入留言内容');
 
-            // 24小时防刷屏限制
+            // 24小时限制
             const lastPost = localStorage.getItem('lastAnonPost');
             if (lastPost) {
                 const diff = Date.now() - parseInt(lastPost);
                 if (diff < 24 * 60 * 60 * 1000) {
-                    return alert('留言太频繁啦，24小时内只能发布一条');
+                    return alert('24小时内只能发布一条留言');
                 }
             }
 
-            // 写入数据库
             const { error } = await supabase
                 .from('messages')
                 .insert([{ content: content }]);
@@ -196,7 +204,7 @@
             localStorage.setItem('lastAnonPost', Date.now().toString());
             input.value = '';
             renderAnon();
-            alert('留言发布成功！所有人都能看到啦');
+            alert('发布成功，所有人都能看到啦！');
         }
 
         async function renderAnon() {
@@ -205,12 +213,15 @@
                 .select('*')
                 .order('created_at', { ascending: false });
 
+            const list = document.getElementById('anonList');
             if (error) {
-                console.error('加载留言失败：', error);
+                list.innerHTML = `<div class="note-item"><div class="note-content">加载失败，请检查网络或配置</div></div>`;
                 return;
             }
-
-            const list = document.getElementById('anonList');
+            if (messages.length === 0) {
+                list.innerHTML = `<div class="note-item"><div class="note-content">还没有留言，快来第一条吧</div></div>`;
+                return;
+            }
             list.innerHTML = messages.map(msg => `
                 <div class="note-item">
                     <div class="note-content">${msg.content}</div>
@@ -219,7 +230,7 @@
             `).join('');
         }
 
-        // 初始化渲染
+        // 页面初始化
         renderSelf();
         renderAnon();
     </script>
