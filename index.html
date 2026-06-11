@@ -38,7 +38,6 @@
             font-size: 1.2em;
         }
 
-        /* 核心修复：按钮强制可点击，无JS依赖样式 */
         .tabs {
             display: flex;
             margin-bottom: 30px;
@@ -54,7 +53,6 @@
             font-size: 1.4em;
             cursor: pointer;
             transition: all 0.3s;
-            /* 强制提升可点击性 */
             pointer-events: auto !important;
             position: relative;
             z-index: 10;
@@ -63,6 +61,7 @@
         .tab-btn.active {
             color: #fff;
             border-bottom: 3px solid #9977dd;
+            background-color: #2a2438;
         }
 
         .tab-content {
@@ -139,79 +138,63 @@
         <p class="subtitle">把垃圾话留在这里，不要随地乱扔垃圾</p>
     </header>
 
-    <!-- 核心修复：用原生onclick，无事件委托，直接绑定 -->
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchToSelf()">我的独白</button>
-        <button class="tab-btn" onclick="switchToAnon()">匿名留言板</button>
+        <button class="tab-btn active" onclick="goSelf()">我的独白</button>
+        <button class="tab-btn" onclick="goAnon()">匿名留言板</button>
     </div>
 
     <div id="selfTab" class="tab-content active">
         <textarea id="selfInput" placeholder="写下和自己的对话，例如：我：今天有点累 另一个我：慢慢来就好"></textarea>
-        <button onclick="saveSelfNote()">保存独白</button>
+        <button onclick="saveSelf()">保存独白</button>
         <div id="selfList" class="note-list"></div>
     </div>
 
     <div id="anonTab" class="tab-content">
         <textarea id="anonInput" placeholder="写下你的心事，所有访客都能看见"></textarea>
-        <button onclick="saveAnonNote()">发布留言</button>
+        <button onclick="saveAnon()">发布留言</button>
         <div id="anonList" class="note-list"></div>
     </div>
 
     <script>
-        // ================= 你的 Supabase 信息 =================
+        // 已直接填入你的信息，无需修改
         const SUPABASE_URL = "https://uoqpiejzetvblgibtlcv.supabase.co";
         const SUPABASE_KEY = "sb_publishable_e50Ga29Efjmak5StW2pvig_RfY05-Qt";
-        // ======================================================
 
         const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 终极修复：直接定义两个切换函数，无任何复杂逻辑
-        function switchToSelf() {
-            // 隐藏所有内容
-            document.getElementById('selfTab').classList.add('active');
-            document.getElementById('anonTab').classList.remove('active');
-            // 切换按钮状态
+        // 标签切换
+        function goSelf() {
+            document.getElementById('selfTab').style.display = 'block';
+            document.getElementById('anonTab').style.display = 'none';
             document.querySelectorAll('.tab-btn')[0].classList.add('active');
             document.querySelectorAll('.tab-btn')[1].classList.remove('active');
         }
 
-        function switchToAnon() {
-            // 隐藏所有内容
-            document.getElementById('selfTab').classList.remove('active');
-            document.getElementById('anonTab').classList.add('active');
-            // 切换按钮状态
+        function goAnon() {
+            document.getElementById('selfTab').style.display = 'none';
+            document.getElementById('anonTab').style.display = 'block';
             document.querySelectorAll('.tab-btn')[0].classList.remove('active');
             document.querySelectorAll('.tab-btn')[1].classList.add('active');
-            // 自动加载留言
-            loadAnonMessages();
+            loadAnon();
         }
 
-        // 我的独白功能
-        function saveSelfNote() {
+        // 我的独白
+        function saveSelf() {
             const input = document.getElementById('selfInput');
             const content = input.value.trim();
-            
-            if (!content) {
-                alert('请输入内容再保存！');
-                return;
-            }
+            if (!content) return alert('请输入内容！');
 
-            const notes = JSON.parse(localStorage.getItem('selfNotes') || '[]');
-            notes.unshift({
-                content: content,
-                time: new Date().toLocaleString()
-            });
-            
-            localStorage.setItem('selfNotes', JSON.stringify(notes));
+            const data = JSON.parse(localStorage.getItem('selfNotes') || '[]');
+            data.unshift({content: content, time: new Date().toLocaleString()});
+            localStorage.setItem('selfNotes', JSON.stringify(data));
             input.value = '';
-            renderSelfMessages();
+            renderSelf();
         }
 
-        function renderSelfMessages() {
-            const notes = JSON.parse(localStorage.getItem('selfNotes') || '[]');
+        function renderSelf() {
+            const data = JSON.parse(localStorage.getItem('selfNotes') || '[]');
             const list = document.getElementById('selfList');
-            
-            list.innerHTML = notes.map(note => `
+            list.innerHTML = data.map(note => `
                 <div class="note-item">
                     <div class="note-content">${note.content}</div>
                     <div class="note-time">${note.time}</div>
@@ -219,58 +202,40 @@
             `).join('');
         }
 
-        // 匿名留言功能
-        async function saveAnonNote() {
+        // 匿名留言
+        async function saveAnon() {
             const input = document.getElementById('anonInput');
             const content = input.value.trim();
-            
-            if (!content) {
-                alert('请输入留言内容！');
-                return;
+            if (!content) return alert('请输入留言！');
+
+            const lastPost = localStorage.getItem('lastPost');
+            if (lastPost && Date.now() - parseInt(lastPost) < 86400000) {
+                return alert('24小时内只能发一条哦~');
             }
 
-            // 24小时防刷屏限制
-            const lastPost = localStorage.getItem('lastAnonPost');
-            if (lastPost) {
-                const diff = Date.now() - parseInt(lastPost);
-                if (diff < 24 * 60 * 60 * 1000) {
-                    alert('24小时内只能发布一条留言哦~');
-                    return;
-                }
-            }
-
-            // 提交到数据库
-            const { error } = await supabase
-                .from('messages')
-                .insert([{ content: content }]);
-
+            const { error } = await supabase.from('messages').insert([{ content: content }]);
             if (error) {
                 alert('发布失败：' + error.message);
-                console.error(error);
                 return;
             }
 
-            localStorage.setItem('lastAnonPost', Date.now().toString());
+            localStorage.setItem('lastPost', Date.now().toString());
             input.value = '';
-            loadAnonMessages();
-            alert('留言发布成功，大家都能看到啦！');
+            loadAnon();
+            alert('发布成功！大家都能看到啦');
         }
 
-        async function loadAnonMessages() {
-            const { data: messages, error } = await supabase
-                .from('messages')
-                .select('*')
-                .order('created_at', { ascending: false });
-
+        async function loadAnon() {
+            const { data: messages, error } = await supabase.from('messages').select('*').order('created_at', { ascending: false });
             const list = document.getElementById('anonList');
-            
+
             if (error) {
-                list.innerHTML = `<div class="note-item"><div class="note-content">数据加载失败，请检查配置</div></div>`;
+                list.innerHTML = `<div class="note-item"><div class="note-content">加载失败：${error.message}</div></div>`;
                 return;
             }
 
             if (messages.length === 0) {
-                list.innerHTML = `<div class="note-item"><div class="note-content">暂无留言，快来发布第一条吧✨</div></div>`;
+                list.innerHTML = `<div class="note-item"><div class="note-content">还没有留言，快来第一条吧✨</div></div>`;
                 return;
             }
 
@@ -283,8 +248,8 @@
         }
 
         // 页面初始化
-        renderSelfMessages();
-        loadAnonMessages();
+        renderSelf();
+        loadAnon();
     </script>
 </body>
 </html>
