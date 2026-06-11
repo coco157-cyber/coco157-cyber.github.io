@@ -150,28 +150,22 @@
         }
 
         // 匿名留言（本地模拟，先跑起来再说）
-        function saveAnon() {
-            const input = document.getElementById('anonInput');
-            const text = input.value.trim();
-            if (!text) return alert('请输入内容！');
-            
-            const messages = JSON.parse(localStorage.getItem('anonMessages') || '[]');
-            messages.unshift({content: text, time: new Date().toLocaleString()});
-            localStorage.setItem('anonMessages', JSON.stringify(messages));
-            input.value = '';
-            renderAnon();
-        }
-
-        function renderAnon() {
-            const messages = JSON.parse(localStorage.getItem('anonMessages') || '[]');
-            document.getElementById('anonList').innerHTML = messages.map(m => `
-                <div class="item">
-                    <div>${m.content}</div>
-                    <div class="time">${m.time}</div>
-                </div>
-            `).join('');
-        }
-
+       <script src="https://giscus.app/client.js"
+        data-repo="coco157-cyber/coco157-cyber.github.io"
+        data-repo-id="R_kgDOS3dq8A"
+        data-category="Announcements"
+        data-category-id="DIC_kwDOS3dq8M4C-8_4"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="1"
+        data-input-position="top"
+        data-theme="preferred_color_scheme"
+        data-lang="zh-CN"
+        data-loading="lazy"
+        crossorigin="anonymous"
+        async>
+</script>
         // 初始化
         renderSelf();
         renderAnon();
