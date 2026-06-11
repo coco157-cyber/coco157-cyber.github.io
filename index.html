@@ -3,248 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- ========== 在这里修改网页标题 ========== -->
-    <title>self-talking | 匿名树洞</title>
+    <title>匿名树洞</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
-        /* 字体+全局样式 仿手写简约风 */
-        @font-face {
-            font-family: HandFont;
-            src: local("KaiTi"), local("STKaiti"), local("SimSun");
+            font-family: "KaiTi", "SimSun", serif;
         }
         body {
-            background-color: #000000;
-            color: #f0f0f0;
-            font-family: HandFont, system-ui, sans-serif;
+            background-color: #000;
+            color: #ccc;
             max-width: 650px;
             margin: 0 auto;
-            padding: 50px 20px;
-            line-height: 1.9;
+            padding: 20px;
         }
-        /* 头部标题区域 */
-        .header {
+        header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
-        /* ========== 在这里修改主站名 ========== */
-        .main-title {
-            font-size: 28px;
-            letter-spacing: 4px;
-            opacity: 0.92;
+        h1 {
+            font-size: 2.2em;
             margin-bottom: 8px;
+            color: #eee;
         }
-        /* ========== 在这里修改副标题 ========== */
-        .sub-title {
-            font-size: 14px;
+        .subtitle {
+            font-size: 1em;
             color: #888;
-            letter-spacing: 1px;
         }
-        /* 切换标签栏 */
-        .tab-nav {
+        .tabs {
             display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-bottom: 35px;
-            font-size: 15px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
         }
-        .tab-nav span {
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #888;
+            padding: 12px;
+            font-size: 1.1em;
             cursor: pointer;
-            padding: 6px 12px;
-            opacity: 0.6;
-            transition: 0.3s;
+            border-bottom: 2px solid transparent;
         }
-        .tab-nav span.active {
-            border-bottom: 1px solid #f0f0f0;
-            opacity: 1;
+        .tab-btn.active {
+            color: #fff;
+            border-bottom-color: #fff;
         }
-        /* 输入框区域 */
-        .input-wrap {
-            margin-bottom: 35px;
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
         }
         textarea {
             width: 100%;
-            min-height: 110px;
             background: #111;
-            border: 1px solid #333;
-            color: #f0f0f0;
-            padding: 16px;
-            border-radius: 3px;
-            font-family: inherit;
-            font-size: 16px;
-            resize: none;
-            outline: none;
+            border: 1px solid #444;
+            color: #ccc;
+            padding: 12px;
+            font-size: 1em;
+            min-height: 100px;
+            resize: vertical;
+            margin-bottom: 15px;
         }
         button {
-            margin-top: 12px;
             background: transparent;
-            border: 1px solid #f0f0f0;
-            color: #f0f0f0;
-            padding: 9px 24px;
-            border-radius: 3px;
+            border: 1px solid #ccc;
+            color: #ccc;
+            padding: 10px 25px;
+            font-size: 1em;
             cursor: pointer;
-            font-family: inherit;
-            transition: 0.3s;
+            transition: all 0.3s;
         }
         button:hover {
-            background: #f0f0f0;
+            background: #ccc;
             color: #000;
         }
-        /* 内容列表单条样式 */
-        .list-item {
+        .note-list {
+            margin-top: 30px;
+        }
+        .note-item {
+            padding: 15px 0;
             border-bottom: 1px solid #222;
-            padding: 22px 0;
         }
-        .time-text {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-        .self-left {
-            text-align: left;
+        .note-content {
+            font-size: 1.1em;
+            line-height: 1.6;
             margin-bottom: 8px;
         }
-        .self-right {
-            text-align: right;
-            color: #aaa;
-        }
-        .anon-content {
-            color: #c9c9c9;
-        }
-        /* 标签页切换隐藏 */
-        .tab-content {
-            display: block;
-        }
-        .hide {
-            display: none;
-        }
-        .tip {
-            font-size: 13px;
-            color: #555;
-            margin-bottom: 10px;
+        .note-time {
+            font-size: 0.85em;
+            color: #666;
         }
     </style>
+    <!-- 引入 Supabase 官方 SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <!-- 头部标题 -->
-    <div class="header">
-        <h1 class="main-title">coco self-talking</h1>
-        <p class="sub-title">收容所有无处安放的情绪</p>
+    <header>
+        <h1>匿名树洞</h1>
+        <p class="subtitle">把心事说给风听</p>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('self')">我的独白</button>
+        <button class="tab-btn" onclick="switchTab('anon')">匿名留言板</button>
     </div>
 
-    <!-- 导航标签 -->
-    <div class="tab-nav">
-        <span class="active" onclick="switchTab('self')">我的独白</span>
-        <span onclick="switchTab('anon')">匿名留言板</span>
+    <div id="self" class="tab-content active">
+        <textarea id="selfInput" placeholder="写下和自己的对话，比如：我：今天有点累 另一个我：没关系，休息一下就好"></textarea>
+        <button onclick="addSelfNote()">保存独白</button>
+        <div id="selfList" class="note-list"></div>
     </div>
 
-    <!-- 板块1：你的专属自我对话区 -->
-    <div id="self" class="tab-content">
-        <p class="tip">和自己对话，记录日常心事</p>
-        <div class="input-wrap">
-            <textarea id="selfText" placeholder="格式参考：我：xxx 另一个我：xxx"></textarea>
-            <button onclick="addSelfNote()">保存记录</button>
-        </div>
-        <div id="selfList"></div>
-    </div>
-
-    <!-- 板块2：全员匿名留言区（所有人可发） -->
-    <div id="anon" class="tab-content hide">
-        <p class="tip">匿名发言，想说什么都可以，无昵称、无头像</p>
-        <div class="input-wrap">
-            <textarea id="anonText" placeholder="在这里写下吐槽、心事、碎碎念..."></textarea>
-            <button onclick="addAnonNote()">发布留言</button>
-        </div>
-        <div id="anonList"></div>
+    <div id="anon" class="tab-content">
+        <textarea id="anonInput" placeholder="写下你的匿名心事，所有人都能看到"></textarea>
+        <button onclick="addAnonNote()">发布留言</button>
+        <div id="anonList" class="note-list"></div>
     </div>
 
     <script>
-        // 本地存储初始化
-        let selfData = JSON.parse(localStorage.getItem("selfData")) || [];
-        let anonData = JSON.parse(localStorage.getItem("anonData")) || [];
-        let lastSendTime = localStorage.getItem("lastSendTime") || 0;
-        const dayTime = 24 * 60 * 60 * 1000; // 24小时毫秒数
+        // ------------ 在这里替换成你自己的 Supabase 信息 ------------
+        const SUPABASE_URL = "ap-northeast-2";
+        const SUPABASE_KEY = "uoqpiejzetvblgibtlcv";
+        // ----------------------------------------------------------
 
-        // 切换标签页
+        // 初始化 Supabase 客户端
+        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 标签页切换
         function switchTab(tabId) {
-            // 隐藏所有板块
-            document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hide"));
-            // 取消所有选中状态
-            document.querySelectorAll(".tab-nav span").forEach(el => el.classList.remove("active"));
-            // 显示当前板块
-            document.getElementById(tabId).classList.remove("hide");
-            event.target.classList.add("active");
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+            if (tabId === 'anon') renderAnon();
         }
 
-        // 渲染【自我对话】列表
-        function renderSelf() {
-            const box = document.getElementById("selfList");
-            box.innerHTML = "";
-            selfData.forEach(item => {
-                let html = `
-                    <div class="list-item">
-                        <div class="time-text">${item.time}</div>
-                        <div class="self-left">我：${item.me}</div>
-                        ${item.other ? `<div class="self-right">另一个我：${item.other}</div>` : ""}
-                    </div>
-                `;
-                box.innerHTML += html;
-            })
-        }
-
-        // 添加自我对话内容
+        // -------------------- 我的独白（本地存储） --------------------
         function addSelfNote() {
-            let val = document.getElementById("selfText").value.trim();
-            if (!val) return;
-            let meStr = val.split("另一个我：")[0].replace("我：", "").trim();
-            let otherStr = val.split("另一个我：")[1]?.trim() || "";
-            let nowTime = new Date().toLocaleString();
+            const input = document.getElementById('selfInput');
+            const content = input.value.trim();
+            if (!content) return alert('请输入内容');
 
-            selfData.unshift({ me: meStr, other: otherStr, time: nowTime });
-            localStorage.setItem("selfData", JSON.stringify(selfData));
-            document.getElementById("selfText").value = "";
+            const notes = JSON.parse(localStorage.getItem('selfNotes') || '[]');
+            notes.unshift({
+                content: content,
+                time: new Date().toLocaleString()
+            });
+            localStorage.setItem('selfNotes', JSON.stringify(notes));
+            input.value = '';
             renderSelf();
         }
 
-        // 渲染【匿名留言】列表
-        function renderAnon() {
-            const box = document.getElementById("anonList");
-            box.innerHTML = "";
-            anonData.forEach(item => {
-                let html = `
-                    <div class="list-item">
-                        <div class="time-text">${item.time}</div>
-                        <div class="anon-content">${item.content}</div>
-                    </div>
-                `;
-                box.innerHTML += html;
-            })
+        function renderSelf() {
+            const notes = JSON.parse(localStorage.getItem('selfNotes') || '[]');
+            const list = document.getElementById('selfList');
+            list.innerHTML = notes.map(note => `
+                <div class="note-item">
+                    <div class="note-content">${note.content}</div>
+                    <div class="note-time">${note.time}</div>
+                </div>
+            `).join('');
         }
 
-        // 添加匿名留言（24小时限制单用户一条）
-        function addAnonNote() {
-            let now = Date.now();
-            // 24小时限制，不想限制直接删除这段判断即可
-            if (now - lastSendTime < dayTime) {
-                alert("24小时内仅可发布一条留言，明天再来吧~");
+        // -------------------- 匿名留言板（Supabase 数据库） --------------------
+        async function addAnonNote() {
+            const input = document.getElementById('anonInput');
+            const content = input.value.trim();
+            if (!content) return alert('请输入留言内容');
+
+            // 24小时防刷屏限制
+            const lastPost = localStorage.getItem('lastAnonPost');
+            if (lastPost) {
+                const diff = Date.now() - parseInt(lastPost);
+                if (diff < 24 * 60 * 60 * 1000) {
+                    return alert('留言太频繁啦，24小时内只能发布一条');
+                }
+            }
+
+            // 写入数据库
+            const { error } = await supabase
+                .from('messages')
+                .insert([{ content: content }]);
+
+            if (error) {
+                alert('发布失败：' + error.message);
                 return;
             }
-            let val = document.getElementById("anonText").value.trim();
-            if (!val) return;
 
-            let nowTime = new Date().toLocaleString();
-            anonData.unshift({ content: val, time: nowTime });
-            anonData.sort(() => 0.5 - Math.random()); // 随机打乱顺序，更有树洞氛围
-            localStorage.setItem("anonData", JSON.stringify(anonData));
-            localStorage.setItem("lastSendTime", now);
-            document.getElementById("anonText").value = "";
+            localStorage.setItem('lastAnonPost', Date.now().toString());
+            input.value = '';
             renderAnon();
+            alert('留言发布成功！所有人都能看到啦');
         }
 
-        // 页面初始加载渲染
+        async function renderAnon() {
+            const { data: messages, error } = await supabase
+                .from('messages')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('加载留言失败：', error);
+                return;
+            }
+
+            const list = document.getElementById('anonList');
+            list.innerHTML = messages.map(msg => `
+                <div class="note-item">
+                    <div class="note-content">${msg.content}</div>
+                    <div class="note-time">${new Date(msg.created_at).toLocaleString()}</div>
+                </div>
+            `).join('');
+        }
+
+        // 初始化渲染
         renderSelf();
         renderAnon();
     </script>
